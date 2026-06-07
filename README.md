@@ -5,6 +5,10 @@ se comportan como piezas de ajedrez (peón, caballo, alfil, torre, reina y algun
 
 Este es un pequeño proyecto personal hecho para practicar JavaScript de navegador sin frameworks ni build. Por qué me gustán los roguelikes y el ajedréz y no me gustó el gambonanza.
 
+## Cómo probarlo
+
+- Entra aqui -> [RogueGambit](https://geuguis.github.io/RogueGambit/)
+
 
 ## Qué tiene
 

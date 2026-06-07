@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <!-- RogueGambit. Copyright (c) 2026 Guillermo Eugui Sánchez. Licencia MIT. -->
+  <title>RogueGambit</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-slate-900 text-slate-100 h-screen overflow-hidden flex flex-col">
+  <div class="w-full max-w-5xl mx-auto h-full flex flex-col gap-2 p-2 sm:p-3 min-h-0">
+
+    <!-- Barra superior de estadísticas (ultra minimalista) -->
+    <header id="hud-bar" role="status" aria-label="Estado del héroe"
+      class="flex items-center justify-around gap-1 sm:gap-3 px-3 py-1.5 sm:py-2 rounded-lg bg-slate-900/40 backdrop-blur-md border border-slate-700/30 flex-wrap">
+      <span class="stat-chip" data-stat="level" aria-label="Nivel actual"><span class="stat-icon" aria-hidden="true">👑</span><span id="level">1</span></span>
+      <span class="stat-chip" data-stat="hp" aria-label="Vida"><span class="stat-icon" aria-hidden="true">❤️</span><span id="hp">3/3</span></span>
+      <span class="stat-chip" data-stat="shield" aria-label="Escudo"><span class="stat-icon" aria-hidden="true">🛡️</span><span id="shield">0</span></span>
+      <span class="stat-chip" data-stat="energy" aria-label="Energía"><span class="stat-icon" aria-hidden="true">⚡</span><span id="energy">2/2</span></span>
+      <span class="stat-chip" data-stat="gold" aria-label="Oro"><span class="stat-icon" aria-hidden="true">💰</span><span id="gold">0</span></span>
+      <span id="combo-chip" class="stat-chip hidden" data-stat="combo" aria-label="Combo"><span class="stat-icon" aria-hidden="true">🔥</span><span id="combo">0/3</span></span>
+      <span id="vengeance-chip" class="stat-chip hidden" data-stat="vengeance" aria-label="Venganza"><span class="stat-icon" aria-hidden="true">🩸</span><span id="vengeance">0</span></span>
+      <span id="thorns-indicator" class="stat-chip hidden" data-stat="thorns" aria-label="Espinas activas"><span class="stat-icon" aria-hidden="true">🌵</span><span class="text-emerald-300 text-xs">Espinas</span></span>
+      <button id="mute-btn" type="button" aria-label="Silenciar sonido" aria-pressed="false" class="stat-chip mute-btn" title="Atajo M">🔊</button>
+     <div id="relics-bar" class="flex items-center gap-1.5 border-l border-slate-700/40 pl-2 sm:pl-3 hidden" aria-label="Reliquias activas"></div>
+    </header>
+
+    <!-- Fila principal: juego + mapa lateral en lg -->
+    <div class="flex-1 flex flex-col lg:flex-row gap-2 min-h-0 min-w-0">
+
+      <!-- Columna principal -->
+      <div class="flex-1 flex flex-col gap-2 min-w-0 min-h-0 lg:order-1">
+
+        <!-- Pociones (mini bar) -->
+        <div id="potion-bar" role="toolbar" aria-label="Inventario de pociones"
+          class="flex items-center justify-center gap-2 sm:gap-3 py-1.5 px-2 rounded-lg bg-slate-900/30 backdrop-blur-md border border-slate-700/20">
+          <span class="text-[10px] text-slate-400 uppercase tracking-wider hidden sm:inline" aria-hidden="true">🧪</span>
+          <button type="button" class="potion-slot" data-slot="0" aria-label="Slot de poción 1 vacío"></button>
+          <button type="button" class="potion-slot" data-slot="1" aria-label="Slot de poción 2 vacío"></button>
+          <button type="button" class="potion-slot" data-slot="2" aria-label="Slot de poción 3 vacío"></button>
+        </div>
+
+        <!-- Tablero (toma el espacio vertical disponible) -->
+        <main id="board-host" class="flex-1 min-h-0 min-w-0 flex items-center justify-center">
+          <div id="board-wrap" class="relative">
+            <div id="board"></div>
+            <div id="piece-layer"></div>
+            <div id="fx-layer"></div>
+          </div>
+        </main>
+
+        <!-- Mensaje -->
+        <div id="message" role="status" aria-live="polite" aria-atomic="true"
+          class="text-center text-xs text-slate-300 min-h-[1rem] -my-1"></div>
+
+        <!-- Barra de cartas (mazo / mano / descarte) -->
+        <div id="card-bar" class="flex gap-2 sm:gap-3 items-stretch">
+          <button id="deck-pile" class="pile-stack pile-deck" type="button" title="Inspeccionar mazo" aria-label="Mazo de extracción - inspeccionar contenido">
+            <span class="pile-back-grid">
+              <span></span><span></span><span></span><span></span>
+              <span></span><span></span>
+            </span>
+            <span class="pile-label">MAZO</span>
+            <span class="pile-count" id="deck-count">0</span>
+            <span class="pile-emblem">♟</span>
+          </button>
+          <div id="hand" class="grid grid-cols-3 gap-2 sm:gap-3 flex-1 min-w-0"></div>
+          <button id="discard-pile" class="pile-stack pile-discard" type="button" title="Inspeccionar descartes" aria-label="Pila de descartes - inspeccionar contenido">
+            <span class="pile-back-grid">
+              <span></span><span></span><span></span><span></span>
+              <span></span><span></span>
+            </span>
+            <span class="pile-label">DESC.</span>
+            <span class="pile-count" id="discard-count">0</span>
+            <span class="pile-emblem">🗑</span>
+          </button>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="flex gap-2">
+          <button id="undo-btn" type="button"
+            aria-keyshortcuts="z"
+            title="Atajo: Z. Un uso por nivel."
+            class="hidden bg-purple-700 hover:bg-purple-600 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold py-2 px-3 rounded-lg transition-colors shadow text-sm flex items-center justify-center gap-1.5">
+            <span aria-hidden="true">⟲</span>
+            <span class="hidden sm:inline">Deshacer</span>
+            <kbd class="hidden sm:inline-block px-1 py-0.5 rounded bg-black/30 border border-white/20 font-mono text-xs">Z</kbd>
+          </button>
+          <button id="end-turn" type="button"
+            aria-keyshortcuts="Space Enter"
+            title="Atajo: Espacio o Enter"
+            class="flex-1 bg-amber-600 hover:bg-amber-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2 rounded-lg transition-colors shadow text-sm sm:text-base tracking-wide flex items-center justify-center gap-2">
+            <span>Terminar Turno</span>
+            <span aria-hidden="true" class="hidden sm:inline-flex items-center gap-1 text-xs opacity-80 font-normal">
+              <kbd class="px-1.5 py-0.5 rounded bg-black/30 border border-white/20 font-mono">Espacio</kbd>
+            </span>
+            <span aria-hidden="true">➤</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mapa (solo en lg+) -->
+	<aside id="hud-map"
+        class="hidden lg:flex flex-col items-center justify-center gap-2 w-24 px-2 py-3
+               bg-slate-900/40 backdrop-blur-md border border-slate-700/30 rounded-lg lg:order-2 self-stretch">
+        <div class="text-[9px] text-slate-400 uppercase tracking-wider">Ruta</div>
+        <div class="map-node" data-node="1"><span>I</span></div>
+        <div class="map-link" data-link="1"></div>
+        <div class="map-node" data-node="2"><span>II</span></div>
+        <div class="map-link" data-link="2"></div>
+        <div class="map-node" data-node="3"><span>III</span></div>
+        <div class="map-link" data-link="3"></div>
+        <div class="map-node boss" data-node="4"><span>🔮</span></div>
+        <div class="text-[9px] text-slate-500 uppercase tracking-wider mt-1">Acto I</div>
+      </aside>
+    </div>
+
+    <!-- Modal de inspección -->
+    <div id="pile-modal" role="dialog" aria-modal="true" aria-labelledby="pile-modal-title"
+      class="hidden fixed inset-0 bg-black/70 z-40 items-center justify-center p-4 backdrop-blur-sm">
+      <div class="bg-slate-800 rounded-xl p-5 max-w-sm w-full shadow-2xl border border-slate-600 max-h-[80vh] flex flex-col">
+        <div class="flex justify-between items-center mb-3">
+          <h3 id="pile-modal-title" class="text-xl font-bold text-amber-300"></h3>
+          <button id="pile-modal-close" type="button" aria-label="Cerrar modal"
+            class="text-slate-300 hover:text-white text-3xl leading-none w-9 h-9 flex items-center justify-center rounded hover:bg-slate-700">×</button>
+        </div>
+        <div id="pile-modal-content" class="space-y-2 overflow-y-auto pr-1"></div>
+      </div>
+    </div>
+
+    <!-- Overlay barroco -->
+    <div id="overlay" role="dialog" aria-modal="true" aria-labelledby="overlay-title"
+      class="hidden fixed inset-0 z-50 p-4">
+      <div id="overlay-bg" class="absolute inset-0" aria-hidden="true"></div>
+      <div id="overlay-frame" class="relative max-w-md w-full mx-auto my-auto p-6 sm:p-8 text-center max-h-[92vh] flex flex-col">
+        <div class="ornament ornament-tl" aria-hidden="true">❦</div>
+        <div class="ornament ornament-tr" aria-hidden="true">❦</div>
+        <div class="ornament ornament-bl" aria-hidden="true">❦</div>
+        <div class="ornament ornament-br" aria-hidden="true">❦</div>
+        <h2 id="overlay-title" class="mb-3"></h2>
+        <div id="overlay-text" class="mb-5 overflow-y-auto flex-1 px-1"></div>
+        <button id="overlay-btn" type="button" class="baroque-button"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tooltip flotante global (enemigos, HUD, casillas) -->
+  <div id="game-tooltip" role="tooltip"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
